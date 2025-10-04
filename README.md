@@ -1,0 +1,2 @@
+# MODI
+Hackathon Stalowa WOla
