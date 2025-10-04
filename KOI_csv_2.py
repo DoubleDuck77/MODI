@@ -8,6 +8,7 @@ koi_list_file = "lista.txt"
 mission = "Kepler"
 output_dir = "KOI_lightcurves_fin"
 
+start_point = 2000
 os.makedirs(output_dir, exist_ok=True)
 
 koi_table = pd.read_csv(koi_list_file, sep='\t', header=None, names=['kepid', 'disposition'])
@@ -17,7 +18,7 @@ koi_table['disposition'] = koi_table['disposition'].astype(str).str.strip().str.
 koi_table = koi_table.drop_duplicates(subset=['kepid', 'disposition'])
 
 print(f"Loaded {len(koi_table)} unique KOIs from input file")
-
+koi_table = koi_table.iloc[start_point:].reset_index(drop=True)
 for idx, row in koi_table.iterrows():
     kepid = row['kepid']
     disposition = row['disposition']
