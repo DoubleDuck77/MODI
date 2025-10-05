@@ -1,0 +1,213 @@
+
+    /* user requested base reset */
+*, *::after, *::before {
+    margin: 0;
+    padding: 0;
+    font-size: 100%;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #000;
+    color: #fff;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.4;
+    min-height: 100vh;
+}
+
+.main__section{
+    margin: 0 auto;
+    width: 90%;
+    text-align: center;
+    margin-top: 70px;
+    max-width: 980px;
+}
+
+h2{
+    font-size: 3em;
+    margin-bottom: 18px;
+}
+
+/* Layout */
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+}
+
+@media (max-width: 720px) {
+    .grid { grid-template-columns: 1fr; }
+    h2 { font-size: 2.2em; }
+}
+
+/* Drag area */
+.dropzone {
+    border: 2px dashed rgba(255,255,255,0.18);
+    border-radius: 12px;
+    padding: 28px;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: border-color 160ms ease, background-color 160ms ease, transform 120ms ease;
+    cursor: pointer;
+    background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+}
+.dropzone.dragover {
+    border-color: #4ae;
+    background-color: rgba(74, 174, 238, 0.04);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+}
+.dropzone p { opacity: 0.9; }
+.dropzone small { color: rgba(255,255,255,0.6); margin-top: 8px; display:block; }
+
+/* Form */
+form.form-card {
+    background: rgba(255,255,255,0.02);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: left;
+    min-height: 220px;
+}
+.form-row {
+    display:flex;
+    gap:12px;
+    margin-bottom:12px;
+    align-items:center;
+}
+.form-row label {
+    width: 110px;
+    font-size: 0.95rem;
+    color: rgba(255,255,255,0.9);
+}
+.form-row input[type="number"],
+.form-row input[type="text"] {
+    flex:1;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+    outline: none;
+}
+.form-actions {
+    display:flex;
+    gap:12px;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+button {
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(90deg,#1ba0ff,#5df0c6);
+    color: #000;
+    font-weight: 600;
+}
+button.secondary {
+    background: rgba(255,255,255,0.06);
+    color: #fff;
+    font-weight: 600;
+}
+
+/* Result panel */
+.result {
+    margin-top: 18px;
+    text-align: center;
+}
+.prob-box {
+    margin-top: 12px;
+    padding: 14px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.04);
+}
+.progress {
+    height: 18px;
+    width: 100%;
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+.progress > i {
+    display:block;
+    height:100%;
+    width:0%;
+    background: linear-gradient(90deg,#22c55e,#06b6d4);
+    transition: width 800ms cubic-bezier(.2,.9,.3,1);
+}
+.meta {
+    margin-top: 8px;
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.75);
+}
+
+.small {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.6);
+}
+
+.hidden { display: none; }
+.error {
+    margin-top: 8px;
+    color: #ffb4b4;
+    background: rgba(255,0,0,0.03);
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,0,0,0.08);
+}
+
+#link__container{
+    width: 200px;
+
+}
+
+#link__container a{
+    text-decoration: none;
+    color: #fff;
+}
+
+.spinner {
+    display:inline-block;
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    border:2px solid rgba(255,255,255,0.12);
+    border-top:2px solid rgba(255,255,255,0.9);
+    animation: spin 0.9s linear infinite;
+    vertical-align: middle;
+    margin-left:8px;
+}
+
+
+    .card{background:rgba(6,12,28,0.45);backdrop-filter:blur(6px);padding:16px;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,0.6);max-width:980px}
+    canvas{display:block;border-radius:6px}
+    .row{display:flex;gap:12px;align-items:center}
+    .small{font-size:13px;color:#b7cfe6}
+    .controls{margin-top:10px}
+    button{padding:8px 12px;border-radius:8px;border:0;background:#1f6feb;color:#fff;cursor:pointer}
+
+
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+
+@media only screen and (max-width: 600px) {
+   .row{
+       flex-direction: column;
+
+   }
+    #lightCanvas{
+        width: 300px;
+    }
+    .form-actions{
+        display: block;
+    }
+}

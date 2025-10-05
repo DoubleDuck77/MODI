@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Exoplanet Transit — Fade, Dimming & Axis Labels</title>
+    <style>
+        body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:20px;background:linear-gradient(180deg,#031028 0%, #061428 60%);color:#eaf2ff}
+        .card{background:rgba(6,12,28,0.45);backdrop-filter:blur(6px);padding:16px;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,0.6);max-width:980px}
+        canvas{display:block;border-radius:6px}
+        .row{display:flex;gap:12px;align-items:center}
+        .small{font-size:13px;color:#b7cfe6}
+        .controls{margin-top:10px}
+        button{padding:8px 12px;border-radius:8px;border:0;background:#1f6feb;color:#fff;cursor:pointer}
+    </style>
+</head>
+<body>
+<div class="card">
+    <h2>Exoplanet Transit — Fade, Dimming & Axis Labels</h2>
+
+    <div class="row" style="margin-top:12px">
+        <canvas id="starCanvas" width="360" height="360"></canvas>
+        <canvas id="lightCanvas" width="520" height="360"></canvas>
+    </div>
+
+    <div class="controls">
+        <button id="pauseBtn">Pause</button>
+        <button id="resetBtn">Reset</button>
+        <span class="small" style="margin-left:12px">Flux: <strong id="fluxVal">1.000</strong></span>
+    </div>
+</div>
+
+<script src="script/visualization.js"></script>
+</body>
+</html>
