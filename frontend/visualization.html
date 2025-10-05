@@ -19,13 +19,29 @@
       box-shadow: 0 6px 24px rgba(0,0,0,0.6);
       max-width: 980px;
     }
-    canvas { display:block; border-radius:6px; }
-    .row { display:flex; gap:12px; align-items:center; }
-    .small { font-size:13px; color:#b7cfe6; }
-    .controls { margin-top:10px; }
+    canvas {
+      display: block;
+      border-radius: 6px;
+    }
+    .row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .small {
+      font-size: 13px;
+      color: #b7cfe6;
+    }
+    .controls {
+      margin-top: 10px;
+    }
     button {
-      padding:8px 12px; border-radius:8px; border:0;
-      background:#1f6feb; color:#fff; cursor:pointer;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 0;
+      background: #1f6feb;
+      color: #fff;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -46,9 +62,11 @@
 </div>
 
 <script>
-/* Modes you can toggle */
-const FADE_MODE = false;    // planet fades with distance (cosmetic)
-const DIMMING_MODE = false; // star brightness follows measured flux (cosmetic)
+/***********************************************
+ * Modes (optional)
+ ***********************************************/
+const FADE_MODE = false;      // if true, planet fades out when far behind
+const DIMMING_MODE = false;   // if true, star dims when blocked
 
 const starCanvas = document.getElementById('starCanvas');
 const sctx = starCanvas.getContext('2d');
@@ -64,7 +82,9 @@ const starX = W/2, starY = H/2;
 
 const starRadiusPx = Math.min(W, H) * 0.08;
 const planetRadiusPx = Math.round(starRadiusPx * 0.55);
-const pathRadius = Math.max(W, H) * 0.35;   // orbital radius (pixels)
+
+// --- orbital radius ---
+const pathRadius = starRadiusPx * 2.5;   // adjustable
 
 let t = 0;
 const period = 6.0;  // seconds per orbit
@@ -74,7 +94,7 @@ let last = null;
 const data = [];
 const maxPoints = 400;
 
-// background stars
+// --- background stars ---
 const starfield = [];
 for (let i=0;i<160;i++){
   starfield.push({
@@ -87,7 +107,8 @@ for (let i=0;i<160;i++){
 
 function drawSky(){
   const g = sctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0, '#021226'); g.addColorStop(1, '#06112a');
+  g.addColorStop(0, '#021226');
+  g.addColorStop(1, '#06112a');
   sctx.fillStyle = g;
   sctx.fillRect(0,0,W,H);
 
@@ -95,7 +116,9 @@ function drawSky(){
   ng.addColorStop(0, 'rgba(180,200,255,0.14)');
   ng.addColorStop(1, 'rgba(0,0,0,0)');
   sctx.fillStyle = ng;
-  sctx.beginPath(); sctx.arc(starX, starY, starRadiusPx*6, 0, Math.PI*2); sctx.fill();
+  sctx.beginPath();
+  sctx.arc(starX, starY, starRadiusPx*6, 0, Math.PI*2);
+  sctx.fill();
 
   for (const s of starfield){
     sctx.beginPath();
@@ -107,17 +130,19 @@ function drawSky(){
   sctx.globalAlpha = 1;
 }
 
-function drawStar(brightness = 1){
+function drawStar(brightness=1){
   sctx.save();
   const intensity = Math.max(0, Math.min(1, brightness));
   const coreColor = `rgba(255,255,255,${intensity})`;
   const haloColor = `rgba(200,220,255,${0.22 * intensity})`;
 
+  // core
   sctx.beginPath();
   sctx.fillStyle = coreColor;
   sctx.arc(starX, starY, starRadiusPx, 0, Math.PI*2);
   sctx.fill();
 
+  // halo
   const hg = sctx.createRadialGradient(starX, starY, starRadiusPx*0.2, starX, starY, starRadiusPx*3);
   hg.addColorStop(0, `rgba(255,255,255,${0.9*intensity})`);
   hg.addColorStop(0.4, haloColor);
@@ -127,6 +152,15 @@ function drawStar(brightness = 1){
   sctx.arc(starX, starY, starRadiusPx*3, 0, Math.PI*2);
   sctx.fill();
   sctx.restore();
+}
+
+function circleOverlapArea(r, R, d){
+  if (d >= r + R) return 0;
+  if (d <= Math.abs(R - r)) return Math.PI * Math.min(r,R)**2;
+  const r2=r*r, R2=R*R;
+  const alpha = Math.acos((d*d + r2 - R2) / (2*d*r)) * 2;
+  const beta  = Math.acos((d*d + R2 - r2) / (2*d*R)) * 2;
+  return 0.5 * (r2*(alpha - Math.sin(alpha)) + R2*(beta - Math.sin(beta)));
 }
 
 function drawPlanet(px, py, opacity){
@@ -139,24 +173,11 @@ function drawPlanet(px, py, opacity){
   sctx.restore();
 }
 
-// area of overlap between two circles (planet r, star R, separation d)
-function circleOverlapArea(r, R, d){
-  if (d >= r + R) return 0;
-  if (d <= Math.abs(R - r)) return Math.PI * Math.min(r,R)**2;
-  const r2=r*r, R2=R*R;
-  const alpha = Math.acos((d*d + r2 - R2) / (2*d*r)) * 2;
-  const beta  = Math.acos((d*d + R2 - r2) / (2*d*R)) * 2;
-  return 0.5 * (r2*(alpha - Math.sin(alpha)) + R2*(beta - Math.sin(beta)));
-}
-
-// compute flux: if planet is behind star (py > starY) there is no occulation
 function computeFlux(px, py){
-  // only cause a dip when planet is in front (py <= starY)
-  if (py > starY) return 1.0;
   const d = Math.hypot(px - starX, py - starY);
   const overlap = circleOverlapArea(planetRadiusPx, starRadiusPx, d);
   const starArea = Math.PI * starRadiusPx**2;
-  return 1 - overlap / starArea;
+  return 1 - overlap/starArea;
 }
 
 function drawLight(){
@@ -178,15 +199,12 @@ function drawLight(){
   const times = data.map(p=>p.t);
   const fluxes = data.map(p=>p.flux);
   const tmin = times[0], tmax = times.at(-1);
-  // avoid division by zero in tx if times equal
-  const tx = x => {
-    if (tmax === tmin) return margin + (lightCanvas.width - margin*2) / 2;
-    return margin + (x - tmin) / (tmax - tmin) * (lightCanvas.width - margin*2);
-  };
   const fmin = Math.min(...fluxes), fmax = Math.max(...fluxes);
   const displayFmin = Math.max(0, fmin - 0.02);
   const displayFmax = Math.min(1.0, fmax + 0.02);
-  const fy = y => bottom - (y - displayFmin) / (displayFmax - displayFmin) * (bottom - top);
+
+  const tx = x => margin + (x-tmin)/(tmax-tmin)*(lightCanvas.width-margin*2);
+  const fy = y => bottom - (y-displayFmin)/(displayFmax-displayFmin)*(bottom-top);
 
   // light curve
   lctx.lineWidth = 2;
@@ -194,18 +212,18 @@ function drawLight(){
   lctx.beginPath();
   data.forEach((p,i)=>{
     const x = tx(p.t), y = fy(p.flux);
-    if (i === 0) lctx.moveTo(x,y); else lctx.lineTo(x,y);
+    if(i===0) lctx.moveTo(x,y); else lctx.lineTo(x,y);
   });
   lctx.stroke();
 
-  // marker for last point
+  // marker
   const lastP = data.at(-1);
   lctx.fillStyle = '#ffdd57';
   lctx.beginPath();
   lctx.arc(tx(lastP.t), fy(lastP.flux), 3, 0, Math.PI*2);
   lctx.fill();
 
-  // y-axis labels + grid
+  // y labels
   lctx.fillStyle = '#bcd';
   lctx.font = '13px system-ui';
   lctx.textAlign = 'right';
@@ -241,40 +259,43 @@ function step(now){
   const dt = (now - last)/1000;
   last = now;
 
-  if (running) {
+  if (running){
     t += dt;
 
-    // circular orbit:
-    // subtract PI/2 so the planet starts at the "front" (top) at t=0
-    const angle = (t / period) * 2 * Math.PI - Math.PI/2;
+    // circular orbit centered on the star
+    const angle = (t / period) * 2 * Math.PI;
+
     const px = starX + pathRadius * Math.cos(angle);
-    const py = starY + pathRadius * Math.sin(angle);
+    const py = starY;
+    const z  = Math.sin(angle); // z>0 → planet is in front
 
-    // compute flux only when planet is in front (see computeFlux)
-    const flux = computeFlux(px, py);
+    // ✅ Only block flux if planet is in front
+    const flux = z > 0 ? computeFlux(px, py) : 1.0;
 
-    // store timestamped point (use performance time so axis moves)
     const timeNow = performance.now()/1000;
     data.push({t: timeNow, flux});
     if (data.length > maxPoints) data.shift();
 
     fluxVal.textContent = flux.toFixed(4);
 
-    // fade & dimming (cosmetic)
     let opacity = 1.0;
     if (FADE_MODE) {
       const d = Math.hypot(px - starX, py - starY);
-      opacity = Math.min(1, d / (starRadiusPx*2));
+      opacity = Math.min(1, d/(starRadiusPx*2));
     }
+
     const brightness = DIMMING_MODE ? flux : 1.0;
 
-    // draw order:
-    // 1) background
-    // 2) star (always)
-    // 3) planet only when in front (py <= starY)
     drawSky();
-    drawStar(brightness);
-    if (py <= starY) drawPlanet(px, py, opacity);
+
+    if (z <= 0) {
+      drawPlanet(px, py, opacity);   // behind
+      drawStar(brightness);
+    } else {
+      drawStar(brightness);          // in front
+      drawPlanet(px, py, opacity);
+    }
+
     drawLight();
   }
 
@@ -291,13 +312,12 @@ resetBtn.addEventListener('click', ()=>{
   t = 0;
   data.length = 0;
   fluxVal.textContent = '1.000';
-  last = null;
   drawSky();
   drawStar();
   drawLight();
 });
 
-// initial draw + start animation
+// initial draw
 drawSky();
 drawStar();
 drawLight();
