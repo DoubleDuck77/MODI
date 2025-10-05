@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Simple Exoplanet Linear Transit (Small Star)</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:20px;background:linear-gradient(180deg,#031028 0%, #061428 60%);color:#eaf2ff}
+    .card{background:rgba(6,12,28,0.45);backdrop-filter:blur(6px);padding:16px;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,0.6);max-width:980px}
+    canvas{display:block;border-radius:6px}
+    .row{display:flex;gap:12px;align-items:center}
+    .small{font-size:13px;color:#b7cfe6}
+    .controls{margin-top:10px}
+    button{padding:8px 12px;border-radius:8px;border:0;background:#1f6feb;color:#fff;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Simple Linear Transit — Small Star (Planet can fully cover)</h2>
+    <p class="small">Star is now much smaller and the planet slightly larger so it can fully occult the star. The left canvas shows the night-sky environment with a starfield; the right canvas shows the realtime normalized flux. Use Pause / Reset to control the loop.</p>
+
+    <div class="row" style="margin-top:12px">
+      <canvas id="starCanvas" width="360" height="360"></canvas>
+      <canvas id="lightCanvas" width="520" height="360"></canvas>
+    </div>
+
+    <div class="controls">
+      <button id="pauseBtn">Pause</button>
+      <button id="resetBtn">Reset</button>
+      <span class="small" style="margin-left:12px">Current flux: <strong id="fluxVal">1.000</strong></span>
+    </div>
+  </div>
+
+  <script>
+    // Simple linear transit where planet can fully cover a small star.
+    const starCanvas = document.getElementById('starCanvas');
+    const sctx = starCanvas.getContext('2d');
+    const lightCanvas = document.getElementById('lightCanvas');
+    const lctx = lightCanvas.getContext('2d');
+
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const fluxVal = document.getElementById('fluxVal');
+
+    const W = starCanvas.width, H = starCanvas.height;
+    const starX = W/2, starY = H/2;
+
+    // Make the star much smaller so the planet can fully cover it
+    const starRadiusPx = Math.min(W, H) * 0.06; // ~21 px for 360 canvas
+    // Planet slightly larger than star so it can fully occult
+    const planetRadiusPx = Math.round(starRadiusPx * 1.15);
+    const pathMargin = Math.max(W, H) * 0.35; // travel distance across canvas
+
+    // animation state
+    let t = 0; // seconds
+    const period = 6.0; // seconds for left->right->left loop
+    let running = true;
+    let last = null;
+
+    // light curve data (rolling)
+    const data = [];
+    const maxPoints = 400;
+
+    // prepare a static starfield (array of stars)
+    const starfield = [];
+    const starCount = 160;
+    for (let i=0;i<starCount;i++){
+      starfield.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r: Math.random()*1.4 + 0.2,
+        a: Math.random()*0.8 + 0.2
+      });
+    }
+
+    function drawSky(){
+      // gradient background (night sky)
+      const g = sctx.createLinearGradient(0,0,0,H);
+      g.addColorStop(0, '#021226');
+      g.addColorStop(1, '#06112a');
+      sctx.fillStyle = g;
+      sctx.fillRect(0,0,W,H);
+
+      // draw soft nebula glow behind star (subtle)
+      const ng = sctx.createRadialGradient(starX, starY, starRadiusPx*0.4, starX, starY, starRadiusPx*6);
+      ng.addColorStop(0, 'rgba(180,200,255,0.14)');
+      ng.addColorStop(1, 'rgba(0,0,0,0)');
+      sctx.fillStyle = ng;
+      sctx.beginPath(); sctx.arc(starX, starY, starRadiusPx*6, 0, Math.PI*2); sctx.fill();
+
+      // draw starfield points
+      for (const s of starfield){
+        sctx.beginPath();
+        sctx.globalAlpha = s.a;
+        sctx.fillStyle = '#ffffff';
+        sctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+        sctx.fill();
+      }
+      sctx.globalAlpha = 1;
+    }
+
+    function drawStar(){
+      // Draw the tiny white star (no limb darkening) as a bright dot
+      sctx.save();
+      // small bright core
+      sctx.beginPath();
+      sctx.fillStyle = '#ffffff';
+      sctx.arc(starX, starY, starRadiusPx, 0, Math.PI*2);
+      sctx.fill();
+      // small halo for glow
+      const hg = sctx.createRadialGradient(starX, starY, starRadiusPx*0.2, starX, starY, starRadiusPx*3);
+      hg.addColorStop(0, 'rgba(255,255,255,0.9)');
+      hg.addColorStop(0.4, 'rgba(200,220,255,0.22)');
+      hg.addColorStop(1, 'rgba(0,0,0,0)');
+      sctx.fillStyle = hg;
+      sctx.beginPath(); sctx.arc(starX, starY, starRadiusPx*3, 0, Math.PI*2); sctx.fill();
+      sctx.restore();
+    }
+
+    // circle overlap area between two circles of radii r and R separated by d
+    function circleOverlapArea(r, R, d){
+      if (d >= r + R) return 0;
+      if (d <= Math.abs(R - r)) return Math.PI * Math.min(r, R) * Math.min(r, R);
+      const r2 = r*r, R2 = R*R;
+      const alpha = Math.acos((d*d + r2 - R2) / (2*d*r)) * 2;
+      const beta  = Math.acos((d*d + R2 - r2) / (2*d*R)) * 2;
+      const area = 0.5 * (r2 * (alpha - Math.sin(alpha)) + R2 * (beta - Math.sin(beta)));
+      return area;
+    }
+
+    function drawPlanet(px, py){
+      sctx.save();
+      sctx.beginPath();
+      sctx.fillStyle = '#000000';
+      sctx.arc(px, py, planetRadiusPx, 0, Math.PI*2);
+      sctx.fill();
+      sctx.restore();
+    }
+
+    // compute normalized flux given planet center and star center
+    function computeFlux(px, py){
+      const dx = px - starX;
+      const dy = py - starY;
+      const d = Math.sqrt(dx*dx + dy*dy);
+      const overlap = circleOverlapArea(planetRadiusPx, starRadiusPx, d);
+      const starArea = Math.PI * starRadiusPx * starRadiusPx;
+      const blocked = overlap / starArea;
+      return 1 - blocked;
+    }
+
+    // light curve drawing
+    function drawLight(){
+      lctx.clearRect(0,0,lightCanvas.width, lightCanvas.height);
+      const margin = 36;
+      // axes
+      lctx.strokeStyle = 'rgba(200,220,255,0.06)';
+      lctx.lineWidth = 1;
+      lctx.beginPath();
+      lctx.moveTo(margin, margin);
+      lctx.lineTo(margin, lightCanvas.height - margin);
+      lctx.lineTo(lightCanvas.width - margin, lightCanvas.height - margin);
+      lctx.stroke();
+
+      if (data.length < 2) return;
+      const times = data.map(p=>p.t);
+      const fluxes = data.map(p=>p.flux);
+      const tmin = times[0];
+      const tmax = times[times.length-1];
+      const fmin = Math.min(...fluxes), fmax = Math.max(...fluxes);
+      const displayFmin = Math.max(0, fmin - 0.02);
+      const displayFmax = Math.min(1.5, fmax + 0.02);
+
+      function tx(x){ return margin + (x - tmin) / (tmax - tmin) * (lightCanvas.width - margin*2); }
+      function fy(y){ return lightCanvas.height - margin - (y - displayFmin) / (displayFmax - displayFmin) * (lightCanvas.height - margin*2); }
+
+      lctx.lineWidth = 2; lctx.strokeStyle = '#ffffff';
+      lctx.beginPath();
+      for (let i=0;i<data.length;i++){
+        const x = tx(data[i].t);
+        const y = fy(data[i].flux);
+        if (i===0) lctx.moveTo(x,y); else lctx.lineTo(x,y);
+      }
+      lctx.stroke();
+
+      // last point marker
+      const lastP = data[data.length-1];
+      lctx.fillStyle = '#ffdd57';
+      lctx.beginPath();
+      lctx.arc(tx(lastP.t), fy(lastP.flux), 3, 0, Math.PI*2);
+      lctx.fill();
+    }
+
+    function step(now){
+      if (!last) last = now;
+      const dt = (now - last) / 1000; last = now;
+      if (running){
+        t += dt;
+        const cycle = (t % period) / period; // 0..1
+        const phase = cycle < 0.5 ? (cycle*2) : (1 - (cycle-0.5)*2);
+        const startX = starX - pathMargin;
+        const endX = starX + pathMargin;
+        const px = startX + phase * (endX - startX);
+        const py = starY; // straight across center
+
+        // draw sky + star + planet
+        drawSky();
+        drawStar();
+        drawPlanet(px, py);
+
+        // compute flux and record
+        const flux = computeFlux(px, py);
+        const timeNow = performance.now() / 1000; // absolute seconds for plotting
+        data.push({t: timeNow, flux});
+        if (data.length > maxPoints) data.shift();
+
+        fluxVal.textContent = flux.toFixed(4);
+        drawLight();
+      }
+      requestAnimationFrame(step);
+    }
+
+    pauseBtn.addEventListener('click', ()=>{ running = !running; pauseBtn.textContent = running ? 'Pause' : 'Resume'; });
+    resetBtn.addEventListener('click', ()=>{ t = 0; data.length = 0; fluxVal.textContent = '1.000'; drawSky(); drawStar(); drawLight(); });
+
+    // initial draw
+    drawSky(); drawStar(); drawLight();
+    requestAnimationFrame(step);
+  </script>
+</body>
+</html>
