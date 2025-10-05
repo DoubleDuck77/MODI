@@ -1,5 +1,6 @@
-
-    /* user requested base reset */
+/* ============================= */
+/* BASE RESET */
+/* ============================= */
 *, *::after, *::before {
     margin: 0;
     padding: 0;
@@ -17,20 +18,72 @@ body {
     min-height: 100vh;
 }
 
-.main__section{
-    margin: 0 auto;
+.main__section {
+    margin: 70px auto 0 auto;
     width: 90%;
     text-align: center;
-    margin-top: 70px;
     max-width: 980px;
 }
 
-h2{
+/* ============================= */
+/* RETURN HOME BUTTON */
+/* ============================= */
+
+/* Desktop floating arrow → now wider rectangle */
+.return-home-btn.desktop-only {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    font-size: 2.5em;           /* smaller icon to fit wider button */
+    color: #fff;                 /* white text */
+    text-decoration: none;
+    background: #1ba0ff;         /* solid primary blue */
+    padding: 14px 28px;          /* wider button */
+    border-radius: 12px;         /* rounded rectangle */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 999;
+}
+
+.return-home-btn.desktop-only:hover {
+    background: #1590e0;
+}
+
+/* Mobile version: big top home button */
+.return-home-btn.mobile-only {
+    display: none;
+}
+
+@media (max-width: 600px) {
+    .return-home-btn.desktop-only {
+        display: none;
+    }
+
+    .return-home-btn.mobile-only {
+        display: inline-block;
+        position: static;
+        font-size: 1.5em;
+        padding: 12px 24px;        /* wider */
+        margin-bottom: 20px;
+        border-radius: 12px;       /* more rounded */
+        background: #adb1b4;       /* solid blue */
+        color: #fff;               /* white text */
+        text-decoration: none;
+        font-weight: 600;
+        text-align: center;
+    }
+}
+
+/* ============================= */
+/* HEADINGS & LAYOUT */
+/* ============================= */
+h2 {
     font-size: 3em;
     margin-bottom: 18px;
 }
 
-/* Layout */
 .grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -43,7 +96,9 @@ h2{
     h2 { font-size: 2.2em; }
 }
 
-/* Drag area */
+/* ============================= */
+/* DRAG AREA */
+/* ============================= */
 .dropzone {
     border: 2px dashed rgba(255,255,255,0.18);
     border-radius: 12px;
@@ -57,16 +112,20 @@ h2{
     cursor: pointer;
     background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
 }
+
 .dropzone.dragover {
     border-color: #4ae;
     background-color: rgba(74, 174, 238, 0.04);
-    transform: translateY(-3px);
+    transform: translateY(-3px);    
     box-shadow: 0 8px 24px rgba(0,0,0,0.6);
 }
-.dropzone p { opacity: 0.9; }
-.dropzone small { color: rgba(255,255,255,0.6); margin-top: 8px; display:block; }
 
-/* Form */
+.dropzone p { opacity: 0.9; }
+.dropzone small { color: rgba(255,255,255,0.6); margin-top: 8px; display: block; }
+
+/* ============================= */
+/* FORM STYLES */
+/* ============================= */
 form.form-card {
     background: rgba(255,255,255,0.02);
     border-radius: 12px;
@@ -74,20 +133,23 @@ form.form-card {
     text-align: left;
     min-height: 220px;
 }
+
 .form-row {
-    display:flex;
-    gap:12px;
-    margin-bottom:12px;
-    align-items:center;
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+    align-items: center;
 }
+
 .form-row label {
     width: 110px;
     font-size: 0.95rem;
     color: rgba(255,255,255,0.9);
 }
+
 .form-row input[type="number"],
 .form-row input[type="text"] {
-    flex:1;
+    flex: 1;
     padding: 8px 10px;
     border-radius: 8px;
     border: 1px solid rgba(255,255,255,0.08);
@@ -95,12 +157,14 @@ form.form-card {
     color: #fff;
     outline: none;
 }
+
 .form-actions {
-    display:flex;
-    gap:12px;
+    display: flex;
+    gap: 12px;
     justify-content: flex-end;
     margin-top: 8px;
 }
+
 button {
     padding: 10px 14px;
     border-radius: 10px;
@@ -110,17 +174,21 @@ button {
     color: #000;
     font-weight: 600;
 }
+
 button.secondary {
     background: rgba(255,255,255,0.06);
     color: #fff;
     font-weight: 600;
 }
 
-/* Result panel */
+/* ============================= */
+/* RESULT PANEL */
+/* ============================= */
 .result {
     margin-top: 18px;
     text-align: center;
 }
+
 .prob-box {
     margin-top: 12px;
     padding: 14px;
@@ -128,6 +196,7 @@ button.secondary {
     background: rgba(255,255,255,0.02);
     border: 1px solid rgba(255,255,255,0.04);
 }
+
 .progress {
     height: 18px;
     width: 100%;
@@ -136,25 +205,19 @@ button.secondary {
     overflow: hidden;
     margin-top: 10px;
 }
+
 .progress > i {
-    display:block;
-    height:100%;
-    width:0%;
+    display: block;
+    height: 100%;
+    width: 0%;
     background: linear-gradient(90deg,#22c55e,#06b6d4);
     transition: width 800ms cubic-bezier(.2,.9,.3,1);
 }
-.meta {
-    margin-top: 8px;
-    font-size: 0.9rem;
-    color: rgba(255,255,255,0.75);
-}
 
-.small {
-    font-size: 0.85rem;
-    color: rgba(255,255,255,0.6);
-}
-
+.meta { margin-top: 8px; font-size: 0.9rem; color: rgba(255,255,255,0.75); }
+.small { font-size: 0.85rem; color: rgba(255,255,255,0.6); }
 .hidden { display: none; }
+
 .error {
     margin-top: 8px;
     color: #ffb4b4;
@@ -164,50 +227,65 @@ button.secondary {
     border: 1px solid rgba(255,0,0,0.08);
 }
 
-#link__container{
-    width: 200px;
-
+/* ============================= */
+/* CARD & CANVAS STYLES */
+/* ============================= */
+.card {
+    background: rgba(6,12,28,0.45);
+    backdrop-filter: blur(6px);
+    padding: 16px;
+    border-radius: 10px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.6);
+    max-width: 980px;
+    margin: 24px auto;
 }
 
-#link__container a{
-    text-decoration: none;
-    color: #fff;
-}
+canvas { display: block; border-radius: 6px; }
 
-.spinner {
-    display:inline-block;
-    width:18px;
-    height:18px;
-    border-radius:50%;
-    border:2px solid rgba(255,255,255,0.12);
-    border-top:2px solid rgba(255,255,255,0.9);
-    animation: spin 0.9s linear infinite;
-    vertical-align: middle;
-    margin-left:8px;
-}
+.row { display: flex; gap: 12px; align-items: center; }
+.controls { margin-top: 10px; }
 
-
-    .card{background:rgba(6,12,28,0.45);backdrop-filter:blur(6px);padding:16px;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,0.6);max-width:980px}
-    canvas{display:block;border-radius:6px}
-    .row{display:flex;gap:12px;align-items:center}
-    .small{font-size:13px;color:#b7cfe6}
-    .controls{margin-top:10px}
-    button{padding:8px 12px;border-radius:8px;border:0;background:#1f6feb;color:#fff;cursor:pointer}
-
-
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
+.card button { padding: 8px 12px; border-radius: 8px; border: 0; background: #1f6feb; color: #fff; cursor: pointer; }
 
 @media only screen and (max-width: 600px) {
-   .row{
-       flex-direction: column;
-
-   }
-    #lightCanvas{
-        width: 300px;
-    }
-    .form-actions{
-        display: block;
-    }
+    .row { flex-direction: column; }
+    #lightCanvas { width: 300px; }
+    .form-actions { display: block; }
 }
+
+/* ============================= */
+/* FOOTER SLIDE */
+/* ============================= */
+.footer-slide {
+    background-color: #1a1a1a;
+    color: #fff;
+    padding: 60px 20px;
+    text-align: center;
+    margin-top: 60px;
+}
+
+.footer-slide p {
+    font-size: 1.6em;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+.footer-team {
+    font-size: 1.2em;
+    margin: 10px 0;
+}
+
+.footer-date {
+    font-size: 1em;
+    opacity: 0.7;
+}
+
+@media (max-width: 600px) {
+    .footer-slide {
+        padding: 40px 12px;
+    }
+
+    .footer-slide p { font-size: 1.3em; }
+    .footer-team { font-size: 1em; }
+}
+  

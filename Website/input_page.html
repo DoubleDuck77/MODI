@@ -1,327 +1,448 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Exoplanet detection</title>
-    <link rel="stylesheet" href="style/style2.css">
-  
+<meta charset="utf-8" />
+<meta name="viewport"
+      content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<title>Exoplanet detection</title>
+<style>
+/* RESET */
+*, *::after, *::before { margin:0; padding:0; box-sizing:border-box; }
+body { background-color:#000; color:#fff; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; line-height:1.4; min-height:100vh; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+
+.main__section { margin: 70px auto 0 auto; width: 90%; max-width:980px; text-align:center; }
+
+/* RETURN HOME BUTTON */
+.return-home-btn { position:fixed; top:20px; left:20px; font-size:6em; color:#fff; text-decoration:none; background:rgba(255,255,255,0.1); padding:12px 14px; border-radius:50%; display:flex; align-items:center; justify-content:center; transition: all 0.2s ease; z-index:999; }
+.return-home-btn:hover { background:rgba(255,255,255,0.25); transform:scale(1.1); }
+@media(max-width:600px){ .return-home-btn{ font-size:2em; padding:8px 10px; top:12px; left:12px; } }
+
+h2 { font-size:3em; margin-bottom:18px; }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+@media(max-width:720px){ .grid{ grid-template-columns:1fr; } h2{ font-size:2.2em; } }
+
+/* Drag area */
+.dropzone { border:2px dashed rgba(255,255,255,0.18); border-radius:12px; padding:28px; min-height:220px; display:flex; flex-direction:column; justify-content:center; align-items:center; transition:border-color 160ms ease, background-color 160ms ease, transform 120ms ease; cursor:pointer; background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005)); }
+.dropzone.dragover { border-color:#4ae; background-color: rgba(74, 174, 238,0.04); transform:translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,0.6);}
+.dropzone p{ opacity:0.9; } .dropzone small{ color:rgba(255,255,255,0.6); margin-top:8px; display:block; }
+
+/* Form */
+form.form-card { background: rgba(255,255,255,0.02); border-radius:12px; padding:20px; text-align:left; min-height:220px; }
+.form-row { display:flex; gap:12px; margin-bottom:12px; align-items:center; }
+.form-row label { width:110px; font-size:0.95rem; color: rgba(255,255,255,0.9);}
+.form-row input[type="number"], input[type="text"] { flex:1; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); background:rgba(0,0,0,0.5); color:#fff; outline:none;}
+.form-actions { display:flex; gap:12px; justify-content:flex-end; margin-top:8px;}
+button{ padding:10px 14px; border-radius:10px; border:none; cursor:pointer; background:linear-gradient(90deg,#1ba0ff,#5df0c6); color:#000; font-weight:600; }
+button.secondary { background: rgba(255,255,255,0.06); color:#fff; font-weight:600; }
+
+/* Result panel */
+.result { margin-top:18px; text-align:center; }
+.prob-box { margin-top:12px; padding:14px; border-radius:10px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.04); }
+.progress { height:18px; width:100%; background: rgba(255,255,255,0.03); border-radius:12px; overflow:hidden; margin-top:10px; }
+.progress>i{ display:block; height:100%; width:0%; background: linear-gradient(90deg,#22c55e,#06b6d4); transition: width 800ms cubic-bezier(.2,.9,.3,1); }
+.meta { margin-top:8px; font-size:0.9rem; color: rgba(255,255,255,0.75);}
+.small { font-size:0.85rem; color: rgba(255,255,255,0.6);}
+.hidden { display:none; }
+.error { margin-top:8px; color:#ffb4b4; background:rgba(255,0,0,0.03); padding:8px; border-radius:8px; border:1px solid rgba(255,0,0,0.08); }
+
+/* CARD + CANVAS */
+.card{background:rgba(6,12,28,0.45);backdrop-filter:blur(6px);padding:16px;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,0.6);max-width:980px; margin:24px auto;}
+canvas{display:block;border-radius:6px;}
+.row{display:flex;gap:12px;align-items:center;}
+.controls{margin-top:10px;}
+.card button{padding:8px 12px;border-radius:8px;border:0;background:#1f6feb;color:#fff;cursor:pointer;}
+@media(max-width:600px){ .row{flex-direction:column;} #lightCanvas{width:300px;} .form-actions{display:block;} }
+
+/* FOOTER */
+.footer-slide { background-color:#1a1a1a; color:#fff; padding:60px 20px; text-align:center; margin-top:60px; }
+.footer-slide p{ font-size:1.6em; line-height:1.5; margin-bottom:20px; }
+.footer-team{ font-size:1.2em; margin:10px 0; }
+.footer-date{ font-size:1em; opacity:0.7; }
+@media(max-width:600px){ .footer-slide{padding:40px 12px;} .footer-slide p{ font-size:1.3em;} .footer-team{font-size:1em;} }
+
+</style>
 </head>
 <body>
+
+<!-- Desktop floating arrow (shown only on screens wider than 600px) -->
+<a href="./index.html" class="return-home-btn desktop-only">&#x2B05;</a>
+
+<style>
+/* Show/hide depending on screen width */
+.desktop-only { display: inline-flex; }
+.mobile-only { display: none; }
+
+@media (max-width: 600px) {
+    .desktop-only { display: none; }
+    .mobile-only {
+        display: inline-block;
+        position: static;
+        font-size: 1.5em;
+        padding: 6px 12px;
+        margin-bottom: 20px;
+        border-radius: 6px;
+        background: rgba(255,255,255,0.15);
+        color: #000;
+        text-decoration: none;
+        font-weight: 600;
+    }
+}
+</style>
+
 <main class="main__section">
-    <h2>The Neural Network</h2>
 
-    <div class="grid">
-        <!-- Drag & Drop area -->
-        <section>
-            <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Drop file here or click to open file picker">
-                <strong>Drag & drop a file here</strong>
-                <p class="small">Supported: .json (features), .csv (single-row features) or pick a file.</p>
-                <small>Dropping will parse & fill the form.</small>
-            </div>
+<!-- RETURN HOME BUTTON -->
+<!-- Desktop floating arrow -->
+<!-- Mobile big top button -->
+<a href="./index.html" class="return-home-btn mobile-only">Home</a>
 
-            <div class="result" id="resultPanel" aria-live="polite">
-                <div id="statusMessage" class="small"></div>
-                <div id="error" class="error hidden"></div>
 
-                <div id="probabilityBox" class="prob-box hidden">
-                    <div><strong>Predicted probability:</strong></div>
-                    <div style="font-size:1.8rem;margin-top:8px" id="probText">0%</div>
-                    <div class="progress" aria-hidden="true">
-                        <i id="progBar"></i>
-                    </div>
-                    <div class="meta" id="metaInfo"></div>
-                </div>
-            </div>
-        </section>
+<h2>The M.O.D.I. Neural Network</h2>
 
-        <!-- Form -->
-        <section>
-            <form id="featureForm" class="form-card" autocomplete="off">
-                <!-- Example form fields - adapt to your model's features -->
-                <div class="form-row">
-                    <label for="period">Period</label>
-                    <input id="period" name="period" type="number" step="any" placeholder="e.g. 365.24">
-                </div>
-                <div class="form-row">
-                    <label for="depth">Depth</label>
-                    <input id="depth" name="depth" type="number" step="any" placeholder="e.g. 0.002">
-                </div>
-                <div class="form-row">
-                    <label for="duration">Duration</label>
-                    <input id="duration" name="duration" type="number" step="any" placeholder="e.g. 2.3">
-                </div>
-                <div class="form-row">
-                    <label for="snr">SNR</label>
-                    <input id="snr" name="snr" type="number" step="any" placeholder="e.g. 12.5">
-                </div>
+<div class="grid">
 
-                <div class="form-actions">
-                    <button type="button" id="btnPredict">Predict</button>
-                    <button type="button" class="secondary" id="btnClear">Clear</button>
-                    <input id="fileInput" type="file" class="hidden" accept=".json,.csv" />
-                </div>
+<!-- Drag & Drop -->
+<section>
+<div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Drop file here or click to open file picker">
+    <strong>Drag & drop a file here</strong>
+    <p class="small">Supported: .json (features), .csv (single-row features) or pick a file.</p>
+    <small>Dropping will parse & fill the form.</small>
+</div>
 
-                <div style="margin-top:12px" class="small">
-                    Tip: drop a JSON file like {"period":365.24,"depth":0.002,"duration":2.3,"snr":12.5}
-                    or a CSV with header row matching field names.
-                </div>
-            </form>
-        </section>
+<div class="result" id="resultPanel" aria-live="polite">
+    <div id="statusMessage" class="small"></div>
+    <div id="error" class="error hidden"></div>
+    <div id="probabilityBox" class="prob-box hidden">
+        <div><strong>Predicted probability:</strong></div>
+        <div style="font-size:1.8rem;margin-top:8px" id="probText">0%</div>
+        <div class="progress" aria-hidden="true"><i id="progBar"></i></div>
+        <div class="meta" id="metaInfo"></div>
     </div>
+</div>
+</section>
 
-    <div class="card">
-        <h3>Exoplanet Transit — Fade, Dimming & Axis Labels</h3>
+<!-- Form -->
+<section>
+<form id="featureForm" class="form-card" autocomplete="off">
+<div class="form-row">
+<label for="period">Period</label>
+<input id="period" name="period" type="number" step="any" placeholder="e.g. 365.24">
+</div>
+<div class="form-row">
+<label for="depth">Depth</label>
+<input id="depth" name="depth" type="number" step="any" placeholder="e.g. 0.002">
+</div>
+<div class="form-row">
+<label for="duration">Duration</label>
+<input id="duration" name="duration" type="number" step="any" placeholder="e.g. 2.3">
+</div>
+<div class="form-row">
+<label for="snr">SNR</label>
+<input id="snr" name="snr" type="number" step="any" placeholder="e.g. 12.5">
+</div>
+<div class="form-actions">
+<button type="button" id="btnPredict">Predict</button>
+<button type="button" class="secondary" id="btnClear">Clear</button>
+<input id="fileInput" type="file" class="hidden" accept=".json,.csv" />
+</div>
+<div style="margin-top:12px" class="small">
+Tip: drop a JSON file like {"period":365.24,"depth":0.002,"duration":2.3,"snr":12.5} or a CSV with header row matching field names.
+</div>
+</form>
+</section>
+</div>
 
-        <div class="row" style="margin-top:12px">
-            <canvas id="starCanvas" width="360" height="360"></canvas>
-            <canvas id="lightCanvas" width="520" height="360"></canvas>
-        </div>
+<!-- Exoplanet animation -->
+<div class="card">
+<h3>Exoplanet Transit Animation</h3>
+<div class="row" style="margin-top:12px">
+    <canvas id="starCanvas" width="360" height="360"></canvas>
+    <canvas id="lightCanvas" width="520" height="360"></canvas>
+</div>
+<div class="controls">
+<button id="pauseBtn">Pause</button>
+<button id="resetBtn">Reset</button>
+<span class="small" style="margin-left:12px">Flux: <strong id="fluxVal">1.000</strong></span>
+</div>
+</div>
 
-        <div class="controls">
-            <button id="pauseBtn">Pause</button>
-            <button id="resetBtn">Reset</button>
-            <span class="small" style="margin-left:12px">Flux: <strong id="fluxVal">1.000</strong></span>
-        </div>
-    </div>
 </main>
-<script src="script/script.js"></script>
 
+<!-- Footer -->
+<section class="footer-slide">
+<div class="footer-content">
+<p>We wish you all the clearest of skies!</p>
+<div class="footer-team">
+<p>Mikołaj Maziarek, Ihnat Vyhuliar, Oliwier Kwiatkowski, Maksym Kaminsyi</p>
+<p>The M.O.D.I. team members</p>
+</div>
+<div class="footer-date">October 2025</div>
+</div>
+</section>
 
 <script>
-    /***********************************************
-     * >>> TOGGLE MODES HERE <<<
-     ***********************************************/
-    const FADE_MODE = false;     // ← Fade-out ON
-    // const FADE_MODE = false;  // ← Fade-out OFF
+/***********************************************
+ * Modes (optional)
+ ***********************************************/
+const FADE_MODE = false;      // if true, planet fades out when far behind
+const DIMMING_MODE = false;   // if true, star dims when blocked
 
-    const DIMMING_MODE = false;  // ← Star brightness decreases
-    // const DIMMING_MODE = false; // ← Star stays constant
-    /***********************************************/
+const starCanvas = document.getElementById('starCanvas');
+const sctx = starCanvas.getContext('2d');
+const lightCanvas = document.getElementById('lightCanvas');
+const lctx = lightCanvas.getContext('2d');
 
-    const starCanvas = document.getElementById('starCanvas');
-    const sctx = starCanvas.getContext('2d');
-    const lightCanvas = document.getElementById('lightCanvas');
-    const lctx = lightCanvas.getContext('2d');
+const pauseBtn = document.getElementById('pauseBtn');
+const resetBtn = document.getElementById('resetBtn');
+const fluxVal = document.getElementById('fluxVal');
 
-    const pauseBtn = document.getElementById('pauseBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    const fluxVal = document.getElementById('fluxVal');
+const W = starCanvas.width, H = starCanvas.height;
+const starX = W/2, starY = H/2;
 
-    const W = starCanvas.width, H = starCanvas.height;
-    const starX = W/2, starY = H/2;
+const starRadiusPx = Math.min(W, H) * 0.08;
+const planetRadiusPx = Math.round(starRadiusPx * 0.55);
 
-    const starRadiusPx = Math.min(W, H) * 0.08;
-    const planetRadiusPx = Math.round(starRadiusPx * 0.55);
-    const pathMargin = Math.max(W, H) * 0.35;
+// --- orbital radius ---
+const pathRadius = starRadiusPx * 2.5;   // adjustable
 
-    let t = 0;
-    const period = 6.0;
-    let running = true;
-    let last = null;
+let t = 0;
+const period = 6.0;  // seconds per orbit
+let running = true;
+let last = null;
 
-    const data = [];
-    const maxPoints = 400;
+const data = [];
+const maxPoints = 400;
 
-    const starfield = [];
-    for (let i=0;i<160;i++){
-        starfield.push({
-            x: Math.random()*W,
-            y: Math.random()*H,
-            r: Math.random()*1.4+0.2,
-            a: Math.random()*0.8+0.2
-        });
+// --- background stars ---
+const starfield = [];
+for (let i=0;i<160;i++){
+  starfield.push({
+    x: Math.random()*W,
+    y: Math.random()*H,
+    r: Math.random()*1.4+0.2,
+    a: Math.random()*0.8+0.2
+  });
+}
+
+function drawSky(){
+  const g = sctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0, '#021226');
+  g.addColorStop(1, '#06112a');
+  sctx.fillStyle = g;
+  sctx.fillRect(0,0,W,H);
+
+  const ng = sctx.createRadialGradient(starX, starY, starRadiusPx*0.4, starX, starY, starRadiusPx*6);
+  ng.addColorStop(0, 'rgba(180,200,255,0.14)');
+  ng.addColorStop(1, 'rgba(0,0,0,0)');
+  sctx.fillStyle = ng;
+  sctx.beginPath();
+  sctx.arc(starX, starY, starRadiusPx*6, 0, Math.PI*2);
+  sctx.fill();
+
+  for (const s of starfield){
+    sctx.beginPath();
+    sctx.globalAlpha = s.a;
+    sctx.fillStyle = '#ffffff';
+    sctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+    sctx.fill();
+  }
+  sctx.globalAlpha = 1;
+}
+
+function drawStar(brightness=1){
+  sctx.save();
+  const intensity = Math.max(0, Math.min(1, brightness));
+  const coreColor = `rgba(255,255,255,${intensity})`;
+  const haloColor = `rgba(200,220,255,${0.22 * intensity})`;
+
+  // core
+  sctx.beginPath();
+  sctx.fillStyle = coreColor;
+  sctx.arc(starX, starY, starRadiusPx, 0, Math.PI*2);
+  sctx.fill();
+
+  // halo
+  const hg = sctx.createRadialGradient(starX, starY, starRadiusPx*0.2, starX, starY, starRadiusPx*3);
+  hg.addColorStop(0, `rgba(255,255,255,${0.9*intensity})`);
+  hg.addColorStop(0.4, haloColor);
+  hg.addColorStop(1, 'rgba(0,0,0,0)');
+  sctx.fillStyle = hg;
+  sctx.beginPath();
+  sctx.arc(starX, starY, starRadiusPx*3, 0, Math.PI*2);
+  sctx.fill();
+  sctx.restore();
+}
+
+function circleOverlapArea(r, R, d){
+  if (d >= r + R) return 0;
+  if (d <= Math.abs(R - r)) return Math.PI * Math.min(r,R)**2;
+  const r2=r*r, R2=R*R;
+  const alpha = Math.acos((d*d + r2 - R2) / (2*d*r)) * 2;
+  const beta  = Math.acos((d*d + R2 - r2) / (2*d*R)) * 2;
+  return 0.5 * (r2*(alpha - Math.sin(alpha)) + R2*(beta - Math.sin(beta)));
+}
+
+function drawPlanet(px, py, opacity){
+  sctx.save();
+  sctx.globalAlpha = opacity;
+  sctx.beginPath();
+  sctx.fillStyle = '#000000';
+  sctx.arc(px, py, planetRadiusPx, 0, Math.PI*2);
+  sctx.fill();
+  sctx.restore();
+}
+
+function computeFlux(px, py){
+  const d = Math.hypot(px - starX, py - starY);
+  const overlap = circleOverlapArea(planetRadiusPx, starRadiusPx, d);
+  const starArea = Math.PI * starRadiusPx**2;
+  return 1 - overlap/starArea;
+}
+
+function drawLight(){
+  lctx.clearRect(0,0,lightCanvas.width, lightCanvas.height);
+  const margin = 48;
+  const top = margin;
+  const bottom = lightCanvas.height - margin;
+
+  // axes
+  lctx.strokeStyle = 'rgba(200,220,255,0.08)';
+  lctx.lineWidth = 1;
+  lctx.beginPath();
+  lctx.moveTo(margin, top);
+  lctx.lineTo(margin, bottom);
+  lctx.lineTo(lightCanvas.width - margin, bottom);
+  lctx.stroke();
+
+  if (data.length < 2) return;
+  const times = data.map(p=>p.t);
+  const fluxes = data.map(p=>p.flux);
+  const tmin = times[0], tmax = times.at(-1);
+  const fmin = Math.min(...fluxes), fmax = Math.max(...fluxes);
+  const displayFmin = Math.max(0, fmin - 0.02);
+  const displayFmax = Math.min(1.0, fmax + 0.02);
+
+  const tx = x => margin + (x-tmin)/(tmax-tmin)*(lightCanvas.width-margin*2);
+  const fy = y => bottom - (y-displayFmin)/(displayFmax-displayFmin)*(bottom-top);
+
+  // light curve
+  lctx.lineWidth = 2;
+  lctx.strokeStyle = '#ffffff';
+  lctx.beginPath();
+  data.forEach((p,i)=>{
+    const x = tx(p.t), y = fy(p.flux);
+    if(i===0) lctx.moveTo(x,y); else lctx.lineTo(x,y);
+  });
+  lctx.stroke();
+
+  // marker
+  const lastP = data.at(-1);
+  lctx.fillStyle = '#ffdd57';
+  lctx.beginPath();
+  lctx.arc(tx(lastP.t), fy(lastP.flux), 3, 0, Math.PI*2);
+  lctx.fill();
+
+  // y labels
+  lctx.fillStyle = '#bcd';
+  lctx.font = '13px system-ui';
+  lctx.textAlign = 'right';
+  lctx.textBaseline = 'middle';
+  const tickCount = 5;
+  for (let i=0;i<=tickCount;i++){
+    const val = displayFmax - i*(displayFmax - displayFmin)/tickCount;
+    const y = fy(val);
+    lctx.fillText(val.toFixed(2), margin-6, y);
+    lctx.beginPath();
+    lctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    lctx.moveTo(margin, y);
+    lctx.lineTo(lightCanvas.width - margin, y);
+    lctx.stroke();
+  }
+
+  // axis titles
+  lctx.save();
+  lctx.fillStyle = '#eaf2ff';
+  lctx.font = '15px system-ui';
+  lctx.translate(6, lightCanvas.height/2);
+  lctx.rotate(-Math.PI/2);
+  lctx.textAlign = 'center';
+  lctx.fillText('Relative Flux', 0, 0);
+  lctx.restore();
+
+  lctx.textAlign = 'center';
+  lctx.fillText('Time (s)', lightCanvas.width/2, lightCanvas.height - 12);
+}
+
+function step(now){
+  if (!last) last = now;
+  const dt = (now - last)/1000;
+  last = now;
+
+  if (running){
+    t += dt;
+
+    // circular orbit centered on the star
+    const angle = (t / period) * 2 * Math.PI;
+
+    const px = starX + pathRadius * Math.cos(angle);
+    const py = starY;
+    const z  = Math.sin(angle); // z>0 → planet is in front
+
+    // ✅ Only block flux if planet is in front
+    const flux = z > 0 ? computeFlux(px, py) : 1.0;
+
+    const timeNow = performance.now()/1000;
+    data.push({t: timeNow, flux});
+    if (data.length > maxPoints) data.shift();
+
+    fluxVal.textContent = flux.toFixed(4);
+
+    let opacity = 1.0;
+    if (FADE_MODE) {
+      const d = Math.hypot(px - starX, py - starY);
+      opacity = Math.min(1, d/(starRadiusPx*2));
     }
 
-    function drawSky(){
-        const g = sctx.createLinearGradient(0,0,0,H);
-        g.addColorStop(0, '#021226');
-        g.addColorStop(1, '#06112a');
-        sctx.fillStyle = g;
-        sctx.fillRect(0,0,W,H);
+    const brightness = DIMMING_MODE ? flux : 1.0;
 
-        const ng = sctx.createRadialGradient(starX, starY, starRadiusPx*0.4, starX, starY, starRadiusPx*6);
-        ng.addColorStop(0, 'rgba(180,200,255,0.14)');
-        ng.addColorStop(1, 'rgba(0,0,0,0)');
-        sctx.fillStyle = ng;
-        sctx.beginPath(); sctx.arc(starX, starY, starRadiusPx*6, 0, Math.PI*2); sctx.fill();
+    drawSky();
 
-        for (const s of starfield){
-            sctx.beginPath();
-            sctx.globalAlpha = s.a;
-            sctx.fillStyle = '#ffffff';
-            sctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
-            sctx.fill();
-        }
-        sctx.globalAlpha = 1;
+    if (z <= 0) {
+      drawPlanet(px, py, opacity);   // behind
+      drawStar(brightness);
+    } else {
+      drawStar(brightness);          // in front
+      drawPlanet(px, py, opacity);
     }
 
-    function drawStar(brightness=1){
-        sctx.save();
-        const intensity = Math.max(0, Math.min(1, brightness));
-        const coreColor = `rgba(255,255,255,${intensity})`;
-        const haloColor = `rgba(200,220,255,${0.22 * intensity})`;
+    drawLight();
+  }
 
-        sctx.beginPath();
-        sctx.fillStyle = coreColor;
-        sctx.arc(starX, starY, starRadiusPx, 0, Math.PI*2);
-        sctx.fill();
+  requestAnimationFrame(step);
+}
 
-        const hg = sctx.createRadialGradient(starX, starY, starRadiusPx*0.2, starX, starY, starRadiusPx*3);
-        hg.addColorStop(0, `rgba(255,255,255,${0.9*intensity})`);
-        hg.addColorStop(0.4, haloColor);
-        hg.addColorStop(1, 'rgba(0,0,0,0)');
-        sctx.fillStyle = hg;
-        sctx.beginPath(); sctx.arc(starX, starY, starRadiusPx*3, 0, Math.PI*2); sctx.fill();
-        sctx.restore();
-    }
+// controls
+pauseBtn.addEventListener('click', ()=>{
+  running = !running;
+  pauseBtn.textContent = running ? 'Pause' : 'Resume';
+});
 
-    function circleOverlapArea(r, R, d){
-        if (d >= r + R) return 0;
-        if (d <= Math.abs(R - r)) return Math.PI * Math.min(r,R)**2;
-        const r2=r*r, R2=R*R;
-        const alpha = Math.acos((d*d + r2 - R2) / (2*d*r)) * 2;
-        const beta  = Math.acos((d*d + R2 - r2) / (2*d*R)) * 2;
-        return 0.5 * (r2*(alpha - Math.sin(alpha)) + R2*(beta - Math.sin(beta)));
-    }
+resetBtn.addEventListener('click', ()=>{
+  t = 0;
+  data.length = 0;
+  fluxVal.textContent = '1.000';
+  drawSky();
+  drawStar();
+  drawLight();
+});
 
-    function drawPlanet(px, py, opacity){
-        sctx.save();
-        sctx.globalAlpha = opacity;
-        sctx.beginPath();
-        sctx.fillStyle = '#000000';
-        sctx.arc(px, py, planetRadiusPx, 0, Math.PI*2);
-        sctx.fill();
-        sctx.restore();
-    }
-
-    function computeFlux(px, py){
-        const d = Math.hypot(px - starX, py - starY);
-        const overlap = circleOverlapArea(planetRadiusPx, starRadiusPx, d);
-        const starArea = Math.PI * starRadiusPx**2;
-        return 1 - overlap/starArea;
-    }
-
-    function drawLight(){
-        lctx.clearRect(0,0,lightCanvas.width, lightCanvas.height);
-        const margin = 48;
-        const top = margin;
-        const bottom = lightCanvas.height - margin;
-
-        // grid + axes
-        lctx.strokeStyle = 'rgba(200,220,255,0.08)';
-        lctx.lineWidth = 1;
-        lctx.beginPath();
-        lctx.moveTo(margin, top);
-        lctx.lineTo(margin, bottom);
-        lctx.lineTo(lightCanvas.width - margin, bottom);
-        lctx.stroke();
-
-        if (data.length < 2) return;
-        const times = data.map(p=>p.t);
-        const fluxes = data.map(p=>p.flux);
-        const tmin = times[0], tmax = times.at(-1);
-        const fmin = Math.min(...fluxes), fmax = Math.max(...fluxes);
-        const displayFmin = Math.max(0, fmin - 0.02);
-        const displayFmax = Math.min(1.0, fmax + 0.02);
-
-        const tx = x => margin + (x-tmin)/(tmax-tmin)*(lightCanvas.width-margin*2);
-        const fy = y => bottom - (y-displayFmin)/(displayFmax-displayFmin)*(bottom-top);
-
-        // light curve
-        lctx.lineWidth = 2; lctx.strokeStyle = '#ffffff';
-        lctx.beginPath();
-        data.forEach((p,i)=>{
-            const x = tx(p.t), y = fy(p.flux);
-            if(i===0) lctx.moveTo(x,y); else lctx.lineTo(x,y);
-        });
-        lctx.stroke();
-
-        // last point marker
-        const lastP = data.at(-1);
-        lctx.fillStyle = '#ffdd57';
-        lctx.beginPath();
-        lctx.arc(tx(lastP.t), fy(lastP.flux), 3, 0, Math.PI*2);
-        lctx.fill();
-
-        // Y-axis labels + title
-        lctx.fillStyle = '#bcd';
-        lctx.font = '13px system-ui';
-        lctx.textAlign = 'right';
-        lctx.textBaseline = 'middle';
-        const tickCount = 5;
-        for (let i=0;i<=tickCount;i++){
-            const val = displayFmax - i*(displayFmax - displayFmin)/tickCount;
-            const y = fy(val);
-            lctx.fillText(val.toFixed(2), margin-6, y);
-            lctx.beginPath();
-            lctx.strokeStyle = 'rgba(255,255,255,0.05)';
-            lctx.moveTo(margin, y);
-            lctx.lineTo(lightCanvas.width - margin, y);
-            lctx.stroke();
-        }
-
-        // Axis titles
-        lctx.save();
-        lctx.fillStyle = '#eaf2ff';
-        lctx.font = '15px system-ui';
-// Y title (rotated)
-        lctx.translate(6, lightCanvas.height/2);
-        lctx.rotate(-Math.PI/2);
-        lctx.textAlign = 'center';
-        lctx.fillText('Relative Flux', 0, 0);
-        lctx.restore();
-
-
-        // X title (time)
-        lctx.textAlign = 'center';
-        lctx.fillText('Time (s)', lightCanvas.width/2, lightCanvas.height - 12);
-    }
-
-    function step(now){
-        if (!last) last = now;
-        const dt = (now - last)/1000; last = now;
-        if (running){
-            t += dt;
-            const cycle = (t % period)/period;
-            const phase = cycle < 0.5 ? cycle*2 : 1 - (cycle-0.5)*2;
-            const startX = starX - pathMargin;
-            const endX = starX + pathMargin;
-            const px = startX + phase*(endX - startX);
-            const py = starY;
-
-            const flux = computeFlux(px, py);
-            const timeNow = performance.now()/1000;
-            data.push({t: timeNow, flux});
-            if (data.length > maxPoints) data.shift();
-
-            fluxVal.textContent = flux.toFixed(4);
-
-            // Planet fade logic
-            let opacity = 1.0;
-            if (FADE_MODE) {
-                const d = Math.abs(px - starX);
-                opacity = Math.min(1, d/(starRadiusPx*2));
-            }
-
-            // Star dimming logic
-            const brightness = DIMMING_MODE ? flux : 1.0;
-
-            drawSky();
-            drawStar(brightness);
-            drawPlanet(px, py, opacity);
-            drawLight();
-        }
-        requestAnimationFrame(step);
-    }
-
-    pauseBtn.addEventListener('click', ()=>{ running=!running; pauseBtn.textContent=running?'Pause':'Resume'; });
-    resetBtn.addEventListener('click', ()=>{ t=0; data.length=0; fluxVal.textContent='1.000'; drawSky(); drawStar(); drawLight(); });
-
-    drawSky(); drawStar(); drawLight();
-    requestAnimationFrame(step);
+// initial draw
+drawSky();
+drawStar();
+drawLight();
+requestAnimationFrame(step);
 </script>
+
 </body>
 </html>

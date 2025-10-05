@@ -3,67 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+          content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Exoplanet detection</title>
+    <title>Exoplanet Detection</title>
     <link rel="stylesheet" href="style/style.css">
 </head>
 <body>
     <main class="main">
+        <!-- HERO SECTION -->
         <section class="main__wrapper">
             <div class="main__separator left__container">
                 <img class="nasa-logo" src="img/nasa.webp" alt="NASA Logo">
             </div>
+
             <div class="main__separator right__container">
-                <h3 class="main__description">NASA Space Apps 2025 submission</h3>
-                <h1 class="main__heading">Exoplanet detection
-                    using machine learning
-                    interactive website</h1>
-                <section id="main__button__container">
-                    <a href="./input_page.html">
-                        <section class="main__btn">Use the AI</section>
-                    </a>
+                <h3 class="main__description">NASA Space Apps 2025 Submission</h3>
+                <h1 class="main__heading">
+                    Exoplanet Detection<br>
+                    Using Machine Learning<br>
+                    Interactive Website
+                </h1>
 
-                    <section class="main__btn">Learn about project</section>
-                </section>
-
+                <div id="main__button__container">
+                    <a href="./input_page.html" class="main__btn">Use the AI</a>
+                    <button class="main__btn" id="learn-more-btn">Learn More</button>
+                </div>
             </div>
         </section>
-        <section class="about__section">
-            <h3>Our challenge</h3>
-            <section class="problem__desc">
-                <p>First: design a neural network capable of analyzing star brightness curves and train it to differentiate between those caused by planet transits and other causes.
+
+        <!-- OUR CHALLENGE SLIDE -->
+        <section class="challenge__slide" id="about">
+            <div class="challenge__content">
+                <h3>Our Challenge</h3>
+                <p>
+                    Firstly: Designing and training a neural network for stellar light curves analysis and differentiation between planetary transits and other events.
                 </p>
                 <p>
-                    Second: put it to good use with an interactive site for people to use!
+                    Secondly: Putting it to good use by the means of an interactive, highly accessible website for both professionals and amateurs to utilize!
                 </p>
-            </section>
-
+            </div>
         </section>
-        <section class="about__section goal">
-            <h3>Website goal</h3>
-            <p class="goal__section">
-                We have made this website and implemented our AI in it as our submission for the 2025 NASA Space Apps global Hackathon, and as a simple way for people to learn about exoplanets. Why? Because it’s fun.
 
-                We wish you all the very best of luck!
+        <!-- GOAL SECTION -->
+        <section class="about__section goal">
+            <h3>Website Goal</h3>
+            <p class="goal__section">
+                We created this website and implemented our AI as our submission for the 2025 NASA Space Apps Global Hackathon, while also being a fun and original way for people to learn about exoplanets.  
+                <br><br>
+                We wish you all the clearest of skies!
             </p>
-            <section class="bottom__container">
-                <section>
-                    <p>
-                        Mikołaj Maziarek, Ihnat Vyhuliar, Oliwier Kwiatkowski i Maksym Kaminsyi
-                    </p>
-                    <p>
-                        The m.o.d.i. team members
-                    </p>
-                </section>
-                <section>
+            <div class="bottom__container">
+                <div>
+                    <p>Mikołaj Maziarek, Ihnat Vyhuliar, Oliwier Kwiatkowski, Maksym Kaminsyi</p>
+                    <p>The M.O.D.I. team members</p>
+                </div>
+                <div>
                     October 2025
-                </section>
-            </section>
+                </div>
+            </div>
         </section>
     </main>
 
+    <script>
+        // Smooth scrolling to About Section
+        document.getElementById("learn-more-btn").addEventListener("click", () => {
+            document.getElementById("about").scrollIntoView({ behavior: "smooth" });
+        });
 
-
+        // Fade-in animation for challenge slide
+        const challengeContent = document.querySelector('.challenge__content');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.2 });
+        observer.observe(challengeContent);
+    </script>
 </body>
 </html>
