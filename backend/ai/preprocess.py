@@ -3,7 +3,7 @@ from scipy.interpolate import interp1d
 from scipy.interpolate import UnivariateSpline
 import batman
 import pandas as pd
-from extract_featrues import extract_features_dataframe
+from extract_features_custom import extract_features_dataframe
 
 
 def remove_cosmic_rays(time, flux, n_sigma=5):
