@@ -1,38 +1,41 @@
-from fastapi import FastAPI, HTTPException, File, UploadFile
-import uvicorn
-import io
-import ast
-import pandas as pd
-from typing import Optional
+from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
+from backend.ai.pipeline import predict_disposition
 
-from backend.run_preprocess import RunPreprocess
+app = FastAPI()
 
-app = FastAPI(title="Exoplanet detection API")
-
-# instantiate the pipeline+model once
-runner = RunPreprocess()
-
-
-@app.get("/")
-async def index():
-    return {"message": "Hello World"}
+# === CORS ===
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
-@app.post("/detect")
-async def detect():
+@app.post("/upload_file")
+async def upload_file(file: UploadFile = File(...)):
     """
-    Accepts only a single multipart file upload (required) with .csv extension.
-    Allowed CSV formats:
-      - Long-format: series_id (or id), time, flux  (one time point per row; grouped by id)
-      - One-row-per-example: columns 'time' and 'flux' where cells are JSON arrays
+    Accepts a CSV file and returns prediction probability as JSON.
     """
-    if file is None:
-        raise HTTPException(status_code=400, detail="A CSV file must be provided in 'file' field")
+    if not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Only .csv files are accepted")
 
-    filename = file.filename or ""
-    model = joblib.load("exoplanet_model.pkl")
+    try:
+        # pass file path or file-like object to your prediction pipeline
+        probability = predict_disposition(file.file)
 
+        # If predict_disposition returns a raw float, wrap it in a dict
+        if isinstance(probability, (float, int)):
+            return {"probability": float(probability)}
 
+        # If it already returns a dict with the probability, just return that
+        if isinstance(probability, dict) and "probability" in probability:
+            return probability
 
-if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, log_level="info")
+        # Fallback — ensure a consistent response format
+        return {"probability": None, "raw_result": str(probability)}
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to process file: {e}")

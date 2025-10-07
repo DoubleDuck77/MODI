@@ -6,6 +6,7 @@
       content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
 <meta http-equiv="X-UA-Compatible" content="ie=edge">
 <title>Exoplanet detection</title>
+<script src="script/script_ajax.js"></script>
 <style>
 /* RESET */
 *, *::after, *::before { margin:0; padding:0; box-sizing:border-box; }
@@ -40,7 +41,7 @@ button.secondary { background: rgba(255,255,255,0.06); color:#fff; font-weight:6
 .result { margin-top:18px; text-align:center; }
 .prob-box { margin-top:12px; padding:14px; border-radius:10px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.04); }
 .progress { height:18px; width:100%; background: rgba(255,255,255,0.03); border-radius:12px; overflow:hidden; margin-top:10px; }
-.progress>i{ display:block; height:100%; width:0%; background: linear-gradient(90deg,#22c55e,#06b6d4); transition: width 800ms cubic-bezier(.2,.9,.3,1); }
+.progress>i{ display:block; height:100%; width:0%; background: linear-gradient(90deg,#22c55e,#06b6d4); transition: width 300ms linear; }
 .meta { margin-top:8px; font-size:0.9rem; color: rgba(255,255,255,0.75);}
 .small { font-size:0.85rem; color: rgba(255,255,255,0.6);}
 .hidden { display:none; }
@@ -97,22 +98,25 @@ canvas{display:block;border-radius:6px;}
 <!-- Mobile big top button -->
 <a href="./index.html" class="return-home-btn mobile-only">Home</a>
 
-
 <h2>The M.O.D.I. Neural Network</h2>
 
 <div class="grid">
 
 <!-- Drag & Drop -->
 <section>
-<div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Drop file here or click to open file picker">
+<div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Drop CSV file here or click to open file picker">
     <strong>Drag & drop a file here</strong>
-    <p class="small">Supported: .json (features), .csv (single-row features) or pick a file.</p>
-    <small>Dropping will parse & fill the form.</small>
+    <p class="small">Supported: .csv (single-row features) — drop a CSV with header or a single data row.</p>
+    <small>Dropping will parse & fill the form and upload the CSV to your server.</small>
 </div>
 
 <div class="result" id="resultPanel" aria-live="polite">
-    <div id="statusMessage" class="small"></div>
-    <div id="error" class="error hidden"></div>
+    <div id="statusMessage" class="small" aria-live="polite"></div>
+    <!-- upload progress (visible while uploading) -->
+    <div id="uploadProgress" class="progress hidden" aria-hidden="true"><i id="uploadProgBar"></i></div>
+
+    <div id="error" class="error hidden" role="alert"></div>
+
     <div id="probabilityBox" class="prob-box hidden">
         <div><strong>Predicted probability:</strong></div>
         <div style="font-size:1.8rem;margin-top:8px" id="probText">0%</div>
@@ -124,32 +128,36 @@ canvas{display:block;border-radius:6px;}
 
 <!-- Form -->
 <section>
-<form id="featureForm" class="form-card" autocomplete="off">
-<div class="form-row">
-<label for="period">Period</label>
-<input id="period" name="period" type="number" step="any" placeholder="e.g. 365.24">
-</div>
-<div class="form-row">
-<label for="depth">Depth</label>
-<input id="depth" name="depth" type="number" step="any" placeholder="e.g. 0.002">
-</div>
-<div class="form-row">
-<label for="duration">Duration</label>
-<input id="duration" name="duration" type="number" step="any" placeholder="e.g. 2.3">
-</div>
-<div class="form-row">
-<label for="snr">SNR</label>
-<input id="snr" name="snr" type="number" step="any" placeholder="e.g. 12.5">
-</div>
-<div class="form-actions">
-<button type="button" id="btnPredict">Predict</button>
-<button type="button" class="secondary" id="btnClear">Clear</button>
-<input id="fileInput" type="file" class="hidden" accept=".json,.csv" />
-</div>
-<div style="margin-top:12px" class="small">
-Tip: drop a JSON file like {"period":365.24,"depth":0.002,"duration":2.3,"snr":12.5} or a CSV with header row matching field names.
-</div>
-</form>
+ <form id="featureForm" class="form-card" autocomplete="off" method="POST">
+                <!-- Example form fields - adapt to your model's features -->
+                <div class="form-row">
+                    <label for="period">Period</label>
+                    <input id="period" name="period" type="text" inputmode="decimal" placeholder="e.g. 365.24">
+                </div>
+                <div class="form-row">
+                    <label for="depth">Depth</label>
+                    <input id="depth" name="depth" type="text" inputmode="decimal" placeholder="e.g. 0.002">
+                </div>
+                <div class="form-row">
+                    <label for="duration">Duration</label>
+                    <input id="duration" name="duration" type="text" inputmode="decimal" placeholder="e.g. 2.3">
+                </div>
+                <div class="form-row">
+                    <label for="snr">SNR</label>
+                    <input id="snr" name="snr" type="text" inputmode="decimal" placeholder="e.g. 12.5">
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="btnPredict">Predict</button>
+                    <button type="button" class="secondary" id="btnClear">Clear</button>
+                    <!-- file input: ONLY accept .csv -->
+                    <input id="fileInput" type="file" class="hidden" accept=".csv" />
+                </div>
+
+                <div style="margin-top:12px" class="small">
+                    Tip: drop a CSV like <code>period,depth,duration,snr</code> then a single data row, or CSV without header in this order.
+                </div>
+            </form>
 </section>
 </div>
 
@@ -181,6 +189,7 @@ Tip: drop a JSON file like {"period":365.24,"depth":0.002,"duration":2.3,"snr":1
 </div>
 </section>
 
+<!-- --- animation & drawing script (kept as in original) --- -->
 <script>
 /***********************************************
  * Modes (optional)
@@ -442,6 +451,361 @@ drawSky();
 drawStar();
 drawLight();
 requestAnimationFrame(step);
+</script>
+
+<!-- --- file handling: drag & drop + file input (accept ONLY .csv) + AJAX upload --- -->
+<script>
+(function(){
+  // ========== CONFIG ==========
+  // Set this to the server endpoint that will accept the uploaded CSV.
+  // Example: const UPLOAD_URL = '/api/upload-csv';
+  const UPLOAD_URL = 'http://localhost:8000/upload_file'; // <-- change this to your real upload URL
+  // ============================
+
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const statusMessage = document.getElementById('statusMessage');
+  const errorBox = document.getElementById('error');
+  const form = document.getElementById('featureForm');
+
+  const uploadProgressEl = document.getElementById('uploadProgress');
+  const uploadProgBar = document.getElementById('uploadProgBar');
+
+  // fields we expect and will fill
+  const expectedFields = ['period','depth','duration','snr'];
+
+  // show/hide helpers
+  function showStatus(msg){
+    statusMessage.textContent = msg || '';
+    statusMessage.style.display = msg ? 'block' : 'none';
+  }
+  function showError(msg){
+    if(!msg){ errorBox.classList.add('hidden'); errorBox.textContent=''; }
+    else { errorBox.classList.remove('hidden'); errorBox.textContent = msg; }
+  }
+  function showUploadProgress(visible){
+    if (visible) {
+      uploadProgressEl.classList.remove('hidden');
+      uploadProgressEl.setAttribute('aria-hidden','false');
+    } else {
+      uploadProgressEl.classList.add('hidden');
+      uploadProgressEl.setAttribute('aria-hidden','true');
+      uploadProgBar.style.width = '0%';
+    }
+  }
+  function setUploadPercent(pct){
+    const v = Math.max(0, Math.min(100, Math.round(pct)));
+    uploadProgBar.style.width = v + '%';
+  }
+
+  // Prevent default for window drag/drop to avoid opening the file
+  window.addEventListener('dragover', e => e.preventDefault());
+  window.addEventListener('drop', e => e.preventDefault());
+
+  // Visual feedback on drag
+  ['dragenter','dragover'].forEach(evt => {
+    dropzone.addEventListener(evt, (e)=>{
+      e.preventDefault(); e.stopPropagation();
+      dropzone.classList.add('dragover');
+    });
+  });
+  ['dragleave','dragend','drop'].forEach(evt=>{
+    dropzone.addEventListener(evt, (e)=>{
+      e.preventDefault(); e.stopPropagation();
+      dropzone.classList.remove('dragover');
+    });
+  });
+
+  // Click to open file picker
+  dropzone.addEventListener('click', ()=> fileInput.click());
+
+  // Keyboard accessibility: Enter/Space triggers file picker
+  dropzone.addEventListener('keydown', (e)=>{
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      fileInput.click();
+    }
+  });
+
+  // File input handler
+  fileInput.addEventListener('change', (ev)=>{
+    const f = ev.target.files && ev.target.files[0];
+    if(f) handleFile(f);
+    // reset to allow same file to be chosen again later
+    fileInput.value = '';
+  });
+
+  // Drop handler
+  dropzone.addEventListener('drop', (ev)=>{
+    const files = ev.dataTransfer && ev.dataTransfer.files;
+    if (!files || files.length === 0) return;
+    handleFile(files[0]);
+  });
+
+  function handleFile(file){
+    showError(null);
+    showStatus('');
+    showUploadProgress(false);
+
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      showError('Only CSV files are accepted. Please drop a .csv file.');
+      return;
+    }
+
+    // 1) locally parse and fill form (keeps old behavior)
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = reader.result;
+        const parsed = parseCSV(text);
+        if (!parsed) {
+          // parsing failed => still attempt upload (user asked to send only .csv)
+          showStatus('CSV could not be parsed locally; uploading raw CSV.');
+        } else {
+          fillFormFromObject(parsed);
+          showStatus('CSV parsed locally — form filled.');
+        }
+      } catch (err) {
+        console.error(err);
+        showError('Error reading CSV locally: ' + (err.message || err));
+      }
+    };
+    reader.onerror = () => {
+      showError('Failed to read file locally.');
+    };
+    reader.readAsText(file);
+
+    // 2) upload the raw CSV file via AJAX (XMLHttpRequest used to show upload progress)
+    uploadFileViaAjax(file);
+  }
+
+  function uploadFileViaAjax(file){
+    if (!UPLOAD_URL || UPLOAD_URL === '/upload_csv') {
+      // Keep working if user forgot to set endpoint — still attempt to POST to default; warn user
+      // (This warning does not stop upload; adjust as you like)
+      console.warn('UPLOAD_URL is set to default. Change UPLOAD_URL to your real endpoint.');
+    }
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', UPLOAD_URL, true);
+    // don't set Content-Type, let browser set multipart/form-data boundary
+
+    // progress
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) {
+        const pct = (e.loaded / e.total) * 100;
+        showUploadProgress(true);
+        setUploadPercent(pct);
+        showStatus('Uploading CSV — ' + Math.round(pct) + '%');
+      }
+    });
+
+   xhr.addEventListener('load', () => {
+  showUploadProgress(false);
+
+  const probBox = document.getElementById('probabilityBox');
+  const probText = document.getElementById('probText');
+  const metaInfo = document.getElementById('metaInfo');
+
+  if (xhr.status >= 200 && xhr.status < 300) {
+    let json = null;
+    try {
+      json = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+    } catch (err) {
+      // invalid JSON — show raw text
+      showStatus('Upload complete (server returned non-JSON).');
+      metaInfo.textContent = 'Raw response: ' + xhr.responseText;
+      probBox.classList.remove('hidden');
+      probText.textContent = 'N/A';
+      return;
+    }
+
+    // Prefer "probability" key; if null, try parse "raw_result"
+    let probVal = null;
+    if (json && json.probability != null) {
+      probVal = Number(json.probability);
+    } else if (json && json.raw_result != null) {
+      // raw_result may be string — try to parse float
+      const parsed = Number(json.raw_result);
+      probVal = Number.isFinite(parsed) ? parsed : null;
+    }
+
+    // show status message if server provided one
+    const msg = (json && (json.message || json.status || json.result)) ? (json.message || json.status || json.result) : 'Upload complete.';
+    showStatus(msg);
+
+    // Update UI
+    if (probVal == null) {
+      // No numeric probability available: show raw_result (if any)
+      probBox.classList.remove('hidden');
+      probText.textContent = 'N/A';
+      metaInfo.textContent = json && json.raw_result != null ? `raw_result: ${json.raw_result}` : 'No probability returned';
+    } else {
+      // Format: 4 decimal places for the probability (0.0845)
+      const probFixed4 = probVal.toFixed(4);
+      // Also show percentage with two decimals for readability
+      const percent = (probVal * 100).toFixed(2) + '%';
+
+      probBox.classList.remove('hidden');
+      probText.textContent = percent; // show percentage in main box
+      metaInfo.textContent = `probability: ${probFixed4} — raw_result: ${json.raw_result ?? probFixed4}`;
+      // update inner progress bar width (optional visual)
+      const progBar = document.getElementById('progBar');
+      if (progBar) {
+        progBar.style.width = Math.min(100, Math.round(probVal * 100)) + '%';
+      }
+    }
+      } else {
+        showError('Upload failed — server returned HTTP ' + xhr.status + '.');
+      }
+    });
+
+    xhr.addEventListener('error', () => {
+      showUploadProgress(false);
+      showError('Upload failed — network error.');
+    });
+
+    xhr.addEventListener('abort', () => {
+      showUploadProgress(false);
+      showError('Upload aborted.');
+    });
+
+    const formData = new FormData();
+    // send file under field name 'file' (change if your server expects different name)
+    formData.append('file', file, file.name);
+
+    // optional: you can send extra fields, e.g. form data parsed (uncomment if needed)
+    // formData.append('period', document.getElementById('period').value || '');
+    // formData.append('depth', document.getElementById('depth').value || '');
+    // ...
+
+    xhr.send(formData);
+    showUploadProgress(true);
+    setUploadPercent(0);
+    showStatus('Uploading CSV — 0%');
+  }
+
+  // CSV parsing helpers: robust line parse handling quoted fields and doubled quotes
+  function parseLine(line, delim){
+    const res = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i=0;i<line.length;i++){
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQuotes && line[i+1] === '"') { cur += '"'; i++; }
+        else { inQuotes = !inQuotes; }
+      } else if (ch === delim && !inQuotes) {
+        res.push(cur);
+        cur = '';
+      } else {
+        cur += ch;
+      }
+    }
+    res.push(cur);
+    return res.map(s => s.trim());
+  }
+
+  // Parse CSV text and return object mapping expectedFields -> value (strings).
+  // Accepts CSV with header (case-insensitive) or single-row CSV without header (mapped by expected order).
+  function parseCSV(text){
+    if (!text) return null;
+
+    // Normalize line endings, split and drop empty lines
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length === 0) return null;
+
+    // detect delimiter: prefer comma, but if many semicolons, use semicolon
+    let sample = lines.slice(0,4).join(' ');
+    const commaCount = (sample.match(/,/g)||[]).length;
+    const semiCount  = (sample.match(/;/g)||[]).length;
+    const delim = semiCount > commaCount ? ';' : ',' ;
+
+    // parse first line
+    const first = parseLine(lines[0], delim);
+    const hasHeader = first.some(cell => /[a-zA-Z_]/.test(cell));
+    let header = null;
+    let rowValues = null;
+
+    if (hasHeader){
+      header = first.map(h => h.replace(/^"|"$/g,'').trim().toLowerCase());
+      // pick first data row after header
+      let dataRowIndex = 1;
+      while (dataRowIndex < lines.length && lines[dataRowIndex].trim() === '') dataRowIndex++;
+      if (dataRowIndex >= lines.length) return null;
+      rowValues = parseLine(lines[dataRowIndex], delim);
+    } else {
+      // no header: assume first line is data
+      header = expectedFields.slice(); // use expected order
+      rowValues = first;
+    }
+
+    const result = {};
+    // helper: replace comma decimals with dot and strip spaces
+    const normaliseNumberString = s => s === undefined || s === null ? '' : s.trim().replace(/\s+/g,'').replace(/,/g, '.');
+
+    // Map values by header name (loose matching) or by position
+    for (let i=0;i<rowValues.length;i++){
+      const rawHeader = header[i] ? header[i].toLowerCase() : null;
+      const val = rowValues[i];
+      if (rawHeader) {
+        for (const key of expectedFields){
+          if (rawHeader === key || rawHeader.replace(/[^a-z]/g,'') === key) {
+            result[key] = normaliseNumberString(val);
+          }
+        }
+      }
+    }
+
+    // If any expected field missing (and we had no proper header), map by position
+    const missing = expectedFields.filter(k => !Object.prototype.hasOwnProperty.call(result, k));
+    if (missing.length && !first.some(cell => /[a-zA-Z_]/.test(cell))) {
+      // map by order
+      for (let i=0;i<expectedFields.length && i<rowValues.length;i++){
+        result[expectedFields[i]] = normaliseNumberString(rowValues[i]);
+      }
+    }
+
+    // Ensure all expected fields exist
+    expectedFields.forEach(k => { if (!Object.prototype.hasOwnProperty.call(result,k)) result[k] = ''; });
+
+    return result;
+  }
+
+  function fillFormFromObject(obj){
+    expectedFields.forEach(k => {
+      const el = form.querySelector(`[name="${k}"], #${k}`);
+      if (el) {
+        el.value = obj[k] ?? '';
+      }
+    });
+  }
+
+  // Optional: clear button behavior
+  const btnClear = document.getElementById('btnClear');
+  if (btnClear) {
+    btnClear.addEventListener('click', () => {
+      expectedFields.forEach(k => {
+        const el = form.querySelector(`[name="${k}"], #${k}`);
+        if (el) el.value = '';
+      });
+      showStatus('');
+      showError(null);
+      showUploadProgress(false);
+    });
+  }
+
+  // Predict button (keeps existing behavior — you can wire it to your prediction endpoint)
+  const btnPredict = document.getElementById('btnPredict');
+  if (btnPredict) {
+    btnPredict.addEventListener('click', () => {
+      // This is just a stub. If you want the Predict button to send the parsed form data
+      // to a prediction endpoint, implement AJAX here (fetch or XHR).
+
+    });
+  }
+
+})();
 </script>
 
 </body>
